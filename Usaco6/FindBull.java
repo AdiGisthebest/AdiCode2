@@ -1,68 +1,40 @@
-import java.awt.desktop.PrintFilesEvent;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Scanner;
 
 public class FindBull {
+    ArrayList<Integer> fittingPieces = new ArrayList<>();
     public void read() {
         try {
-            Scanner scanner = new Scanner(new File("bcs.in"));
-            String[] arr = scanner.nextLine().split(" ");
-            int size = Integer.parseInt(arr[0]);
-            int length = Integer.parseInt(arr[1]);
-            int[][] figure = new int[size][size];
-            int[][][] pieces = new int[length][size][size];
-            ArrayList<Integer> fittingPieces = new ArrayList<>();
-            for(int i = 0; i < size; i++) {
-                char[] charArr = scanner.nextLine().toCharArray();
-                for(int j = 0; j < size; j++) {
-                    if(charArr[j] == '#') {
-                        figure[i][j] = 1;
-                    }
+            Scanner scan = new Scanner(new File("bcs.in"));
+            String[] arr = scan.nextLine().split(" ");
+            int gridSize = Integer.parseInt(arr[0]);
+            int exampleCnt = Integer.parseInt(arr[1]);
+            char[][] piece = new char[gridSize][gridSize];
+            //System.out.println(piece);
+            char[][][] guesses = new char[exampleCnt][gridSize][gridSize];
+            for(int i = 0; i < gridSize; i++) {
+                char[] charArr = scan.nextLine().toCharArray();
+                piece[i] = charArr;
+            }
+            for(int i = 0; i < exampleCnt; i++) {
+                for(int j = 0; j < gridSize; j++) {
+                    guesses[i][j] = scan.nextLine().toCharArray();
                 }
             }
-            for(int i = 0; i < length; i++) {
-                for(int j = 0; j < size; j++) {
-                    char[] charArr = scanner.nextLine().toCharArray();
-                    for(int k = 0; k < size; k++) {
-                        if(charArr[k] == '#') {
-                            pieces[i][j][k] = 1;
-                        }
-                    }
-                }
-            }
-            for(int i = 0; i < length; i++) {
-                //System.out.println(ifFits(pieces[i], figure));
-                if(ifFits(pieces[i],figure)) {
+            for(int i = 0; i < exampleCnt; i++) {
+                if(this.checkFit(piece, guesses[i])) {
                     fittingPieces.add(i);
                 }
             }
-            Collections.sort(fittingPieces);
-            //System.out.println(fittingPieces);
-            if(fittingPieces.size() == 2) {
-                System.out.println((fittingPieces.get(0) + 1) + " " + (fittingPieces.get(1) + 1));
-            } else {
-                for(int i = 0; i < fittingPieces.size(); i++) {
-                    for(int j = 0 ; j < fittingPieces.size(); j++) {
-                        int[][] figureCopy = copy(figure);
-                        subtract(pieces[fittingPieces.get(i)],figureCopy);
-                        subtract(pieces[fittingPieces.get(j)],figureCopy);
-                        for(int k = 0; k < figureCopy.length; k++) {
-                            //System.out.println(Arrays.toString(figureCopy[k]));
-                        }
-                        //System.out.println(fittingPieces.get(i) + " " + fittingPieces.get(j));
-                        if(allZeros(figureCopy)) {
-                            if(fittingPieces.get(i) < fittingPieces.get(j)) {
-                                System.out.println((fittingPieces.get(i)+1) + " " + (fittingPieces.get(j)+1));
-                            } else {
-                                System.out.println((fittingPieces.get(j)+1) + " " + (fittingPieces.get(i)+1));
-                            }
-
-                            return;
-                        }
+            //System.out.println(fittingPieces + " fittingPieces");
+            for(int i = 0; i < fittingPieces.size(); i++) {
+                for(int j = i+1; j < fittingPieces.size(); j++) {
+                    if(this.checkIfWorks(piece, guesses[fittingPieces.get(i)], guesses[fittingPieces.get(j)])) {
+                        System.out.println((fittingPieces.get(i)+1) + " " + (fittingPieces.get(j)+1));
+                        return;
                     }
                 }
             }
@@ -70,129 +42,167 @@ public class FindBull {
             e.printStackTrace();
         }
     }
-    public boolean ifFits(int[][] piece, int[][] figure) {
-        int maxX = 0;
-        int maxY = 0;
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        for(int i = 0; i < piece.length; i++) {
-            for(int j = 0; j < piece[i].length; j++) {
-                if(piece[i][j] == 1) {
-                    if(i > maxY) {
-                        maxY = i;
+    public ArrayList<char[][]> removeAllWays(char[][] piece, char[][] guess) {
+        int[] corners = this.findCorners(guess);
+        int minX = corners[0];
+        int maxX = corners[1];
+        int minY = corners[2];
+        int maxY = corners[3];
+        int iter = 0;
+        int jter = 0;
+        ArrayList<char[][]> ans = new ArrayList<>();
+        char[][] newGuess = new char[maxY-minY+1][maxX-minX+1];
+        for(int i = minY; i <= maxY; i++,iter++) {
+            jter = 0;
+            for(int j = minX; j <= maxX; j++,jter++) {
+                newGuess[iter][jter] = guess[i][j];
+            }
+        }
+        //System.out.println(newGuess.length + " " + newGuess[0].length);
+        //System.out.println(piece.length - newGuess.length+1);
+        //System.out.println(piece.length-newGuess[0].length+1);
+        for(int i = 0; i < piece.length - newGuess.length+1; i++) {
+            for(int j = 0; j < piece.length-newGuess[0].length+1; j++) {
+                boolean breakBool = false;
+                for(int k = 0; k < newGuess.length; k++) {
+                    for(int l = 0; l < newGuess[0].length; l++) {
+                        if(newGuess[k][l] != piece[i+k][j+l] && piece[i+k][j+l] == '.') {
+                            breakBool = true;
+                            break;
+                        }
                     }
-                    if(i < minY) {
-                        minY = i;
+                }
+                if(!breakBool) {
+                    char[][] pieceClone = this.copy(piece);
+                    //System.out.println(pieceClone + " " + piece);
+                    for(int k = 0; k < newGuess.length; k++) {
+                        for(int l = 0; l < newGuess[0].length; l++) {
+                            if(newGuess[k][l] == piece[i+k][j+l] && piece[i+k][j+l] == '#') {
+                                pieceClone[i+k][j+l] = '-';
+                            }
+                        }
                     }
-                    if(j > maxX) {
-                        maxX = j;
-                    }
-                    if(j < minX) {
-                        minX = j;
+                    //printMatrix(pieceClone);
+                    ans.add(pieceClone);
+                }
+            }
+        }
+        return ans;
+    }
+    public char[][] copy(char[][] arr) {
+        char[][] copy = new char[arr.length][arr.length];
+        for(int i = 0; i < arr.length; i++) {
+            for(int j = 0; j < arr.length; j++) {
+                copy[i][j] = arr[i][j];
+            }
+        }
+        return copy;
+    }
+    public boolean checkIfWorks(char[][] piece, char[][] guess1, char[][] guess2) {
+        ArrayList<char[][]> removed = this.removeAllWays(piece, guess1);
+        for(int i = 0; i < removed.size(); i++) {
+            //printMatrix(removed.get(i));
+            //printMatrix(guess2);
+            //System.out.println(this.checkFit(removed.get(i),guess2));
+            if(this.checkFit(removed.get(i), guess2)) {
+
+                ArrayList<char[][]> removedGuess2 = this.removeAllWays(removed.get(i),guess2);
+                for(int k = 0; k < removedGuess2.size(); k++) {
+                    //printMatrix(removedGuess2.get(k));
+                    if(this.matrixMatch(piece,removedGuess2.get(k))) {
+                        return true;
                     }
                 }
             }
         }
-        int width = maxX-minX+1;
-        int height = maxY-minY+1;
-        //System.out.println(width + " " + height);
-        for(int i = 0; i < piece.length-height + 1; i++) {
-            for(int j = 0; j < piece[i].length - width + 1; j++) {
-                int[][] piecePart = new int[height][width];
-                int[][] figurePart = new int[height][width];
-                for(int k = 0; k < height; k++) {
+        return false;
+    }
+    public boolean matrixMatch(char[][] removedMatrix, char[][] piece){
+        for(int i = 0; i < removedMatrix.length; i++) {
+            for(int j = 0; j < removedMatrix.length; j++) {
+                if(removedMatrix[i][j] == '-' && piece[i][j] != '#') {
+                    return false;
+                }
+                if(piece[i][j] == '#' && piece[i][j] != '-') {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
-                    for(int l = 0; l < width; l++) {
-                        piecePart[k][l] = piece[minX+k][minY+l];
-                        figurePart[k][l] = figure[k+i][l+j];
+    public boolean checkFit(char[][] piece, char[][] guess) {
+        int[] corners = this.findCorners(guess);
+        int minX = corners[0];
+        int maxX = corners[1];
+        int minY = corners[2];
+        int maxY = corners[3];
+        int iter = 0;
+        int jter = 0;
+        char[][] newGuess = new char[maxY-minY+1][maxX-minX+1];
+        //System.out.println(Arrays.toString(corners));
+        //System.out.println(newGuess.length + " " + newGuess[0].length);
+        for(int i = minY; i <= maxY; i++,iter++) {
+            jter = 0;
+            for(int j = minX; j <= maxX; j++,jter++) {
+                newGuess[iter][jter] = guess[i][j];
+            }
+        }
+        //System.out.println(piece.length - newGuess.length+1);
+        //System.out.println(piece.length-newGuess[0].length+1);
+        for(int i = 0; i < piece.length - newGuess.length+1; i++) {
+            for(int j = 0; j < piece.length-newGuess[0].length+1; j++) {
+                boolean breakBool = false;
+                for(int k = 0; k < newGuess.length; k++) {
+                    for(int l = 0; l < newGuess[0].length; l++) {
+                        if(newGuess[k][l] != piece[i+k][j+l] && piece[i+k][j+l] == '.') {
+                            breakBool = true;
+                            break;
+                        }
                     }
                 }
-                if(isEqual(piecePart,figurePart)) {
+                if(!breakBool) {
                     return true;
                 }
             }
         }
         return false;
     }
-    public boolean isEqual(int[][] piecePart, int[][] figurePart) {
-        for(int i = 0; i < piecePart.length; i++) {
-            //System.out.println(Arrays.toString(piecePart[i]) + "   " + Arrays.toString(figurePart[i]));
-            for(int j = 0; j < piecePart[i].length; j++) {
-                if(piecePart[i][j] == 1 && figurePart[i][j] == 0) {
-                    //System.out.println();
-                    return false;
-                }
-            }
-        }
-        //System.out.println();
-        return true;
-    }
-    public int[][] copy(int [][] original) {
-        int [][] copy = new int[original.length][original[0].length];
-        for(int i = 0; i < copy.length; i++) {
-            for(int j = 0; j < copy[i].length; j++) {
-                copy[i][j] = original[i][j];
-            }
-        }
-        return copy;
-    }
-    public void subtract(int[][] piece, int[][] figure) {
-        int maxX = 0;
-        int maxY = 0;
+    public int[] findCorners(char[][] guess) {
         int minX = Integer.MAX_VALUE;
+        int maxX = 0;
         int minY = Integer.MAX_VALUE;
-        for(int i = 0; i < piece.length; i++) {
-            for(int j = 0; j < piece[i].length; j++) {
-                if(piece[i][j] == 1) {
-                    if(i > maxY) {
-                        maxY = i;
-                    }
+        int maxY = 0;
+        for(int i = 0; i < guess.length; i++) {
+            for(int j = 0; j < guess.length; j++) {
+                if(guess[i][j] == '#') {
                     if(i < minY) {
                         minY = i;
                     }
-                    if(j > maxX) {
-                        maxX = j;
+                    if(i > maxY) {
+                        maxY = i;
                     }
                     if(j < minX) {
                         minX = j;
                     }
-                }
-            }
-        }
-        int width = maxX-minX+1;
-        int height = maxY-minY+1;
-        for(int i = 0; i < piece.length-height + 1; i++) {
-            for(int j = 0; j < piece[i].length - width + 1; j++) {
-                int[][] piecePart = new int[height][width];
-                int[][] figurePart = new int[height][width];
-                for(int k = 0; k < height; k++) {
-                    for(int l = 0; l < width; l++) {
-                        piecePart[k][l] = piece[minX+k][minY+l];
-                        figurePart[k][l] = figure[k+i][l+j];
-                    }
-                }
-                if(isEqual(piecePart,figurePart)) {
-                    for(int k = 0; k < height; k++) {
-                        for(int l = 0; l < width; l++) {
-                            if(piecePart[minX + k][minY+l] == 1) {
-                                figure[k+i][l+j] = piecePart[minX+k][minY+l]-1;
-                            }
-                        }
+                    if(j > maxX) {
+                        maxX = j;
                     }
                 }
             }
         }
+        int[] arr = {minX,maxX,minY,maxY};
+        return arr;
     }
-    public boolean allZeros(int[][] arr) {
-        for(int i = 0; i < arr.length; i++) {
-            for(int j = 0; j < arr[i].length; j++) {
-                if(arr[i][j] != 0) {
-                    return false;
-                }
+    public void printMatrix(char[][] matrix) {
+        for(int i = 0; i < matrix.length; i++) {
+            for(int j = 0; j < matrix[i].length; j++) {
+                System.out.print(matrix[i][j] + " ");
             }
+            System.out.println();
         }
-        return true;
     }
+
     public static void main(String[] args) {
         try {
             File file = new File("bcs.out");

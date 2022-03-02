@@ -2,49 +2,43 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 public class Herdle {
+    int correct;
+    int partCorrect;
     public void read() {
-        Scanner scanner = new Scanner(System.in);
-        char [][] correctArr = new char[3][3];
-        char [][] guessArr = new char[3][3];
-        int correct = 0;
-        int partialCorrect = 0;
-        HashMap<Character,Integer> charCount = new HashMap<>();
+        char[][] grid1 = new char[3][3];
+        char[][] grid2 = new char[3][3];
+        HashMap<String,Integer> counts = new HashMap<>();
+        Scanner scan = new Scanner(System.in);
         for(int i = 0; i < 3; i++) {
-            correctArr[i] = scanner.nextLine().toCharArray();
+            grid1[i] = scan.nextLine().toCharArray();
         }
         for(int i = 0; i < 3; i++) {
-            guessArr[i] = scanner.nextLine().toCharArray();
+            grid2[i] = scan.nextLine().toCharArray();
         }
         for(int i = 0; i < 3; i++) {
             for(int j = 0; j < 3; j++) {
-                if(correctArr[i][j] == guessArr[i][j]) {
+                if(grid1[i][j] == grid2[i][j]) {
                     correct++;
-                    guessArr[i][j] = '-';
+                    grid2[i][j] = ' ';
                 } else {
-                    if(charCount.containsKey(correctArr[i][j])) {
-                        charCount.put(correctArr[i][j], charCount.get(correctArr[i][j]) + 1);
+                    if(!counts.containsKey(String.valueOf(grid1[i][j]))) {
+                        counts.put(String.valueOf(grid1[i][j]), 1);
                     } else {
-                        charCount.put(correctArr[i][j],1);
+                        counts.put(String.valueOf(grid1[i][j]), counts.get(String.valueOf(grid1[i][j])) + 1);
                     }
                 }
             }
         }
-        //System.out.println(charCount.keySet());
-
         for(int i = 0; i < 3; i++) {
             for(int j = 0; j < 3; j++) {
-                if(charCount.containsKey(guessArr[i][j])) {
-                    partialCorrect++;
-                    if(charCount.get(guessArr[i][j]) == 1) {
-                        charCount.remove(guessArr[i][j]);
-                    } else {
-                        charCount.put(guessArr[i][j],charCount.get(guessArr[i][j]) - 1);
-                    }
+                if(counts.get(String.valueOf(grid2[i][j])) != null && counts.get(String.valueOf(grid2[i][j])) > 0) {
+                    partCorrect++;
+                    counts.put(String.valueOf(grid2[i][j]), counts.get(String.valueOf(grid2[i][j])) - 1);
                 }
             }
         }
         System.out.println(correct);
-        System.out.println(partialCorrect);
+        System.out.println(partCorrect);
     }
 
     public static void main(String[] args) {
