@@ -1,5 +1,3 @@
-import javax.imageio.plugins.tiff.BaselineTIFFTagSet;
-import java.awt.desktop.PrintFilesEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
